@@ -1,0 +1,99 @@
+---
+title: "Data Wrangling Project 1"
+output: pdf_document
+---
+
+## Objective 
+The objective of this project is to deal with missing values in a toy dataset showing product purchases from an electronics store as a part of Springboard's Foundations of Data Science course.
+
+## Setup
+The first step is to load the required libraries and the dataset in R.
+Load libraries:
+
+```{r}
+library (tidyr)
+library (dplyr)
+library(stringr)
+library(psych)
+```
+
+Import .csv file as  a data frame:
+
+```{r}
+raw_data <- read.csv("/Users/tanvidesai/Documents/2016 Courses/Foundations of Data Science/Data Wrangling Project 1/refine_original.csv", 
+         head = TRUE, sep = ",")
+tbl_df(raw_data)
+View(raw_data)
+```
+
+## Brand names
+The 'company' column has four brands: Philips, Akzo, Van Houten and Unilever. There are many different spellings and capitaliations for these. So we will clean up the brand names by transforming them.
+
+```{r}
+raw_data$company <- tolower(raw_data$company)
+raw_data$company <- str_replace(raw_data$company, "f", "ph")
+raw_data$company <- str_replace(raw_data$company, "^ph[a-z]+ps", "philips")
+raw_data$company <- str_replace(raw_data$company, "^ak[a-z0-9 ]+", "akzo")
+raw_data$company <- str_replace(raw_data$company,"unilver","unilever")
+```
+
+## Product code and number
+The product code and number are combined into a single column and we would like to separate them into different columns.
+
+```{r}
+raw_data <- separate(raw_data, Product.code...number, 
+                     c("product_code", "product_number"), sep = "-")
+```
+
+## Product categories
+The product codes represent the following product categories:
+- p = Smartphone
+- v = TV
+- x = Laptop
+- q = Tablet
+We will add a column with the product category for each record.
+
+```{r}
+categorize_product <- function(product_code) {
+  if (product_code == "p") {
+  return ("Smartphone") 
+  } else if (product_code == "v") {
+    return ("TV") 
+  } else if (product_code == "x") {
+    return ("Laptop") 
+  } else if (product_code == "q") {
+    return("Tablet") 
+  }}
+```
+
+## Address
+We will combine the separated address components into a single address column that can be easily geocoded.
+
+```{r}
+raw_data <- unite(raw_data, "full_address", address, city, country, sep = ",")
+```
+
+## Dummy variables for company and product category
+We will create binary dummy variables for each set of values in company and product category.
+1) Company
+```{r}
+dummy_var <- dummy.code(raw_data$company)
+new_dataset <- data.frame(raw_data, dummy_var)
+colnames(new_dataset)[7:10] <- paste("company_", colnames(new_dataset[ c(7:10)]), sep = "")
+```
+
+2) Product category
+```{r}
+dummy_var1 <- dummy.code(new_dataset$product_category)
+final_dataset <- data.frame(new_dataset, dummy_var1)
+colnames(final_dataset)[11:14] <- paste("product_", colnames(final_dataset[ c(11:14)]), sep = "")
+
+View(final_dataset)
+```
+
+## Output
+Finally, we will export the new dataset as .csv file.
+```{r}
+write.csv(final_dataset, "/Users/tanvidesai/Documents/2016 Courses/Foundations of Data Science/Data Wrangling Project 1/refine_cleaned.csv")
+```
+
