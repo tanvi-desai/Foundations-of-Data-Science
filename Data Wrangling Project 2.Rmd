@@ -1,0 +1,76 @@
+---
+title: 'Data Wrangling Project 2: Titanic data'
+output: pdf_document
+---
+## Objective 
+The objective of this project is to deal with missing values in Titanic passenger dataset in order to practice data wrangling techniques for Springboard's Foundations of Data Science course.
+
+The dataset records attributes of passengers on the Titanic, including who survived and who didn't.
+
+
+
+## Setup
+The first step is to load the required libraries and the dataset in R.
+Load libraries:
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(graphics)
+library(stats)
+```
+
+Import .csv file as  a data frame:
+
+```{r}
+raw_data <- read.csv("/Users/tanvidesai/Documents/2016 Courses/Foundations of Data Science/Data Wrangling Project 2/titanic_original.csv", 
+                     head = TRUE, sep = ",", stringsAsFactors = FALSE)
+tbl_df(raw_data)
+str(raw_data)
+```
+
+## Port of embarkation
+Since the 'embarked' column has some missing values, which is known to correspond to passengers who embarked at Southampton. So we will replace missing values with 'S'.
+
+```{r}
+raw_data$embarked[raw_data$embarked==" "] <- "S"
+View(raw_data)
+```
+
+
+## Age 
+Missing values for age can be populate with mean age.
+
+```{r}
+raw_data$age[is.na(raw_data$age)] <- mean(raw_data$age, na.rm= T)
+View(raw_data)
+```
+
+Potentially, we could use median, mode or 0 to replace missing values.
+In this case, mean works best because:
+- Median and mean are very similar (and therefore do not alter the overall distribution of data making mode unnecessary).
+- 0 is not a valid value for age.
+
+## Lifeboat
+There are a lot of missing values in the 'boat' column which we will replace with a dummy value: 'None'.
+
+```{r}
+raw_data$boat <- sub("^$", "None", raw_data$boat)
+```
+
+## Cabin information
+77% of  passengers do not have cabin information associated with them. 
+It does not make sense to fill missing cabin numbers with a value because no apparent pattern can be found on reviewing the dataset that would enable interpretation of the missing data.
+Missing value here could mean that cabins were purchased for groups of people by individual people/agency and/or that cabins were shared by multiple people.
+It is possible that the missing cabin number might be a useful indicator of survival. So we will create a new binary variable: 'has_cabin_number'.
+
+```{r}
+titanic_data_cleaned <- mutate(raw_data, has_cabin_number = ifelse(grepl("^$", cabin), 0, 1))
+View(titanic_data_cleaned)
+```
+
+## Output
+Finally, we will export the new dataset as .csv file.
+```{r}
+write.csv(titanic_data_cleaned, "/Users/tanvidesai/Documents/2016 Courses/Foundations of Data Science/Data Wrangling Project 2/titanic_clean.csv")
+```
